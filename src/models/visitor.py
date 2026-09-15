@@ -2,7 +2,7 @@ from models.person import Person
 
 
 class Visitor(Person):
-    """A visitor is a Person who is entering the condominium temporarily."""
+    """Um visitante e uma Pessoa entrando no condominio de forma temporaria."""
 
     def __init__(self, name: str, cpf: str, license_plate: str = ""):
         super().__init__(name, cpf)

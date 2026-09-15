@@ -1,9 +1,10 @@
 """Menu do terminal: le as opcoes do usuario e chama o cadastro."""
 
-from models import Resident, Visitor
+from models import Resident, Visitor, Employee
 
 residents = []
 visitors = []
+employees = []
 
 
 def register_resident():
@@ -25,6 +26,16 @@ def register_visitor():
     print("Visitante cadastrado com sucesso!\n")
 
 
+def register_employee():
+    name = input("Nome do funcionario: ")
+    cpf = input("CPF: ")
+    role = input("Funcao (porteiro, zelador, faxineiro...): ")
+    shift = input("Turno (manha, tarde ou noite): ")
+    employee = Employee(name, cpf, role, shift)
+    employees.append(employee)
+    print("Funcionario cadastrado com sucesso!\n")
+
+
 def list_all():
     print("\n--- Moradores ---")
     for resident in residents:
@@ -33,6 +44,10 @@ def list_all():
     print("\n--- Visitantes ---")
     for visitor in visitors:
         print(visitor.describe())
+
+    print("\n--- Funcionarios ---")
+    for employee in employees:
+        print(employee.describe())
     print()
 
 
@@ -40,7 +55,8 @@ def run_menu():
     while True:
         print("1 - Cadastrar morador")
         print("2 - Cadastrar visitante")
-        print("3 - Listar cadastros")
+        print("3 - Cadastrar funcionario")
+        print("4 - Listar cadastros")
         print("0 - Sair")
         option = input("Escolha uma opcao: ")
 
@@ -49,6 +65,8 @@ def run_menu():
         elif option == "2":
             register_visitor()
         elif option == "3":
+            register_employee()
+        elif option == "4":
             list_all()
         elif option == "0":
             break

@@ -1,5 +1,5 @@
 class Person:
-    """Base class for anyone registered in the condominium system."""
+    """Classe base para qualquer pessoa cadastrada no sistema do condominio."""
 
     def __init__(self, name: str, cpf: str):
         self._name = name

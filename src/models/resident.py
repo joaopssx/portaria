@@ -2,7 +2,7 @@ from models.person import Person
 
 
 class Resident(Person):
-    """A resident is a Person linked to a specific unit and block."""
+    """Um morador e uma Pessoa vinculada a uma unidade e bloco especificos."""
 
     def __init__(self, name: str, cpf: str, unit_number: str, block: str):
         super().__init__(name, cpf)
