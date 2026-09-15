@@ -1,10 +1,11 @@
 """Menu do terminal: le as opcoes do usuario e chama o cadastro."""
 
-from models import Resident, Visitor, Employee
+from models import Resident, Visitor, Employee, DeliveryPerson
 
 residents = []
 visitors = []
 employees = []
+deliveries = []
 
 
 def register_resident():
@@ -26,6 +27,16 @@ def register_visitor():
     print("Visitante cadastrado com sucesso!\n")
 
 
+def register_delivery():
+    name = input("Nome do entregador: ")
+    cpf = input("CPF: ")
+    company = input("Empresa (iFood, Correios, transportadora...): ")
+    license_plate = input("Placa do veiculo (deixe em branco se nao tiver): ")
+    delivery = DeliveryPerson(name, cpf, company, license_plate)
+    deliveries.append(delivery)
+    print("Entregador cadastrado com sucesso!\n")
+
+
 def register_employee():
     name = input("Nome do funcionario: ")
     cpf = input("CPF: ")
@@ -45,6 +56,10 @@ def list_all():
     for visitor in visitors:
         print(visitor.describe())
 
+    print("\n--- Entregadores ---")
+    for delivery in deliveries:
+        print(delivery.describe())
+
     print("\n--- Funcionarios ---")
     for employee in employees:
         print(employee.describe())
@@ -55,8 +70,9 @@ def run_menu():
     while True:
         print("1 - Cadastrar morador")
         print("2 - Cadastrar visitante")
-        print("3 - Cadastrar funcionario")
-        print("4 - Listar cadastros")
+        print("3 - Cadastrar entregador")
+        print("4 - Cadastrar funcionario")
+        print("5 - Listar cadastros")
         print("0 - Sair")
         option = input("Escolha uma opcao: ")
 
@@ -65,8 +81,10 @@ def run_menu():
         elif option == "2":
             register_visitor()
         elif option == "3":
-            register_employee()
+            register_delivery()
         elif option == "4":
+            register_employee()
+        elif option == "5":
             list_all()
         elif option == "0":
             break
