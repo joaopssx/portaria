@@ -1,6 +1,6 @@
 """Menu do terminal: le as opcoes do usuario e chama o cadastro."""
 
-from models import Resident, Visitor, Employee, DeliveryPerson, Unit
+from models import Resident, Visitor, Employee, DeliveryPerson, Unit, Vehicle
 
 residents = []
 visitors = []
@@ -18,13 +18,23 @@ def find_or_create_unit(number: str, block: str) -> Unit:
     return unit
 
 
+def read_vehicle():
+    plate = input("Placa do veiculo (deixe em branco se nao tiver): ")
+    if not plate:
+        return None
+    model = input("Modelo do veiculo (opcional): ")
+    color = input("Cor do veiculo (opcional): ")
+    return Vehicle(plate, model, color)
+
+
 def register_resident():
     name = input("Nome do morador: ")
     cpf = input("CPF: ")
     unit_number = input("Numero da unidade: ")
     block = input("Bloco: ")
     unit = find_or_create_unit(unit_number, block)
-    resident = Resident(name, cpf, unit)
+    vehicle = read_vehicle()
+    resident = Resident(name, cpf, unit, vehicle)
     residents.append(resident)
     print("Morador cadastrado com sucesso!\n")
 
@@ -32,8 +42,8 @@ def register_resident():
 def register_visitor():
     name = input("Nome do visitante: ")
     cpf = input("CPF: ")
-    license_plate = input("Placa do veiculo (deixe em branco se nao tiver): ")
-    visitor = Visitor(name, cpf, license_plate)
+    vehicle = read_vehicle()
+    visitor = Visitor(name, cpf, vehicle)
     visitors.append(visitor)
     print("Visitante cadastrado com sucesso!\n")
 
@@ -42,8 +52,8 @@ def register_delivery():
     name = input("Nome do entregador: ")
     cpf = input("CPF: ")
     company = input("Empresa (iFood, Correios, transportadora...): ")
-    license_plate = input("Placa do veiculo (deixe em branco se nao tiver): ")
-    delivery = DeliveryPerson(name, cpf, company, license_plate)
+    vehicle = read_vehicle()
+    delivery = DeliveryPerson(name, cpf, company, vehicle)
     deliveries.append(delivery)
     print("Entregador cadastrado com sucesso!\n")
 

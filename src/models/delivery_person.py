@@ -1,11 +1,12 @@
 from models.visitor import Visitor
+from models.vehicle import Vehicle
 
 
 class DeliveryPerson(Visitor):
     """Um entregador e um Visitante que traz uma encomenda de uma empresa."""
 
-    def __init__(self, name: str, cpf: str, company: str, license_plate: str = ""):
-        super().__init__(name, cpf, license_plate)
+    def __init__(self, name: str, cpf: str, company: str, vehicle: Vehicle = None):
+        super().__init__(name, cpf, vehicle)
         self._company = company
 
     @property

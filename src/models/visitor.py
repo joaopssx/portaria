@@ -1,19 +1,20 @@
 from models.person import Person
+from models.vehicle import Vehicle
 
 
 class Visitor(Person):
     """Um visitante e uma Pessoa entrando no condominio de forma temporaria."""
 
-    def __init__(self, name: str, cpf: str, license_plate: str = ""):
+    def __init__(self, name: str, cpf: str, vehicle: Vehicle = None):
         super().__init__(name, cpf)
-        self._license_plate = license_plate
+        self._vehicle = vehicle
 
     @property
-    def license_plate(self) -> str:
-        return self._license_plate
+    def vehicle(self) -> Vehicle:
+        return self._vehicle
 
     def describe(self) -> str:
         base_info = super().describe()
-        if self._license_plate:
-            return f"{base_info} - Visitante, veiculo placa {self._license_plate}"
+        if self._vehicle:
+            return f"{base_info} - Visitante, veiculo {self._vehicle.describe()}"
         return f"{base_info} - Visitante, sem veiculo"
