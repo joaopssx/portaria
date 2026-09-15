@@ -9,10 +9,15 @@ Programação Orientada a Objetos. Permite cadastrar **moradores** e
 ```
 condominio-poo/
 ├── src/
-│   ├── main.py       # ponto de entrada, menu do programa
-│   ├── person.py      # classe base, com nome e CPF
-│   ├── resident.py    # morador, herda de Person
-│   └── visitor.py     # visitante, herda de Person
+│   ├── main.py            # ponto de entrada do programa
+│   ├── models/            # classes de dominio
+│   │   ├── person.py       # classe base, com nome e CPF
+│   │   ├── resident.py     # morador, herda de Person
+│   │   └── visitor.py      # visitante, herda de Person
+│   └── ui/                # interface com o usuario
+│       └── menu.py         # menu no terminal
+├── docs/
+│   └── IDEIAS.md          # 100 ideias de melhoria para o projeto
 ├── README.md
 ├── LICENSE
 └── .gitignore
@@ -44,3 +49,6 @@ visitante, listar os cadastros feitos, ou sair.
 
 Este é o MVP inicial, cobrindo só o cadastro. As próximas etapas planejadas
 são: controle de acesso (entrada/saída na portaria) e reserva de área comum.
+
+Uma lista completa de ideias de melhoria, detalhadas uma a uma, está em
+[docs/IDEIAS.md](docs/IDEIAS.md).

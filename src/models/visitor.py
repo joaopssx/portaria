@@ -1,4 +1,4 @@
-from person import Person
+from models.person import Person
 
 
 class Visitor(Person):
@@ -17,5 +17,3 @@ class Visitor(Person):
         if self._license_plate:
             return f"{base_info} - Visitante, veiculo placa {self._license_plate}"
         return f"{base_info} - Visitante, sem veiculo"
-
-
