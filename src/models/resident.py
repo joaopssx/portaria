@@ -1,22 +1,19 @@
 from models.person import Person
+from models.unit import Unit
 
 
 class Resident(Person):
-    """Um morador e uma Pessoa vinculada a uma unidade e bloco especificos."""
+    """Um morador e uma Pessoa vinculada a uma Unidade."""
 
-    def __init__(self, name: str, cpf: str, unit_number: str, block: str):
+    def __init__(self, name: str, cpf: str, unit: Unit):
         super().__init__(name, cpf)
-        self._unit_number = unit_number
-        self._block = block
+        self._unit = unit
+        self._unit.add_resident(self)
 
     @property
-    def unit_number(self) -> str:
-        return self._unit_number
-
-    @property
-    def block(self) -> str:
-        return self._block
+    def unit(self) -> Unit:
+        return self._unit
 
     def describe(self) -> str:
         base_info = super().describe()
-        return f"{base_info} - Morador do bloco {self._block}, unidade {self._unit_number}"
+        return f"{base_info} - Morador do {self._unit.describe()}"

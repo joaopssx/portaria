@@ -1,11 +1,21 @@
 """Menu do terminal: le as opcoes do usuario e chama o cadastro."""
 
-from models import Resident, Visitor, Employee, DeliveryPerson
+from models import Resident, Visitor, Employee, DeliveryPerson, Unit
 
 residents = []
 visitors = []
 employees = []
 deliveries = []
+units = []
+
+
+def find_or_create_unit(number: str, block: str) -> Unit:
+    for unit in units:
+        if unit.number == number and unit.block == block:
+            return unit
+    unit = Unit(number, block)
+    units.append(unit)
+    return unit
 
 
 def register_resident():
@@ -13,7 +23,8 @@ def register_resident():
     cpf = input("CPF: ")
     unit_number = input("Numero da unidade: ")
     block = input("Bloco: ")
-    resident = Resident(name, cpf, unit_number, block)
+    unit = find_or_create_unit(unit_number, block)
+    resident = Resident(name, cpf, unit)
     residents.append(resident)
     print("Morador cadastrado com sucesso!\n")
 
