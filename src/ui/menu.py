@@ -1,12 +1,13 @@
 """Menu do terminal: le as opcoes do usuario e chama o cadastro."""
 
-from models import Resident, Visitor, Employee, DeliveryPerson, Unit, Vehicle
+from models import Resident, Visitor, Employee, DeliveryPerson, Unit, Vehicle, AccessLog
 
 residents = []
 visitors = []
 employees = []
 deliveries = []
 units = []
+access_logs = []
 
 
 def find_or_create_unit(number: str, block: str) -> Unit:
@@ -16,6 +17,13 @@ def find_or_create_unit(number: str, block: str) -> Unit:
     unit = Unit(number, block)
     units.append(unit)
     return unit
+
+
+def find_person_by_cpf(cpf: str):
+    for person in residents + visitors + deliveries + employees:
+        if person.cpf == cpf:
+            return person
+    return None
 
 
 def read_vehicle():
@@ -68,6 +76,25 @@ def register_employee():
     print("Funcionario cadastrado com sucesso!\n")
 
 
+def register_access():
+    cpf = input("CPF de quem esta entrando: ")
+    person = find_person_by_cpf(cpf)
+    if person is None:
+        print("Nenhuma pessoa cadastrada com esse CPF.\n")
+        return
+
+    if isinstance(person, Resident):
+        destination = person.unit
+    else:
+        unit_number = input("Numero da unidade de destino: ")
+        block = input("Bloco de destino: ")
+        destination = find_or_create_unit(unit_number, block)
+
+    log = AccessLog(person, destination)
+    access_logs.append(log)
+    print("Entrada registrada com sucesso!\n")
+
+
 def list_all():
     print("\n--- Moradores ---")
     for resident in residents:
@@ -84,6 +111,10 @@ def list_all():
     print("\n--- Funcionarios ---")
     for employee in employees:
         print(employee.describe())
+
+    print("\n--- Registros de acesso ---")
+    for log in access_logs:
+        print(log.describe())
     print()
 
 
@@ -93,7 +124,8 @@ def run_menu():
         print("2 - Cadastrar visitante")
         print("3 - Cadastrar entregador")
         print("4 - Cadastrar funcionario")
-        print("5 - Listar cadastros")
+        print("5 - Registrar entrada na portaria")
+        print("6 - Listar cadastros")
         print("0 - Sair")
         option = input("Escolha uma opcao: ")
 
@@ -106,6 +138,8 @@ def run_menu():
         elif option == "4":
             register_employee()
         elif option == "5":
+            register_access()
+        elif option == "6":
             list_all()
         elif option == "0":
             break
