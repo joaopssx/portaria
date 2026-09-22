@@ -4,4 +4,9 @@ __pycache__/
 venv/
 .vscode/
 .idea/
+
+# Lista pessoal de ideias (nao faz parte da entrega)
 docs/IDEIAS.md
+
+# Dados gerados em tempo de execucao
+dados/

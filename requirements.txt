@@ -1,0 +1,4 @@
+# Dependencias do projeto.
+# O sistema de terminal (src/main.py) roda so com a biblioteca padrao.
+# O Django e necessario apenas para a interface web (pasta web/).
+Django>=5.0

@@ -1,0 +1,31 @@
+{% extends "portaria_app/base.html" %}
+{% block titulo %}Portaria - Cadastros{% endblock %}
+
+{% block conteudo %}
+  <div class="cartao">
+    <h2>Buscar</h2>
+    <form method="get">
+      <label for="busca">Parte do nome</label>
+      <input type="text" id="busca" name="busca" value="{{ busca }}" placeholder="ex: ana">
+      <button type="submit">Buscar</button>
+    </form>
+  </div>
+
+  <div class="cartao">
+    <h2>Cadastros {% if busca %}(filtrando por "{{ busca }}"){% endif %}</h2>
+    {% if pessoas %}
+      <table>
+        <tr><th>Nome</th><th>CPF</th><th>Descricao</th></tr>
+        {% for pessoa in pessoas %}
+          <tr>
+            <td>{{ pessoa.name }}</td>
+            <td>{{ pessoa.formatted_cpf }}</td>
+            <td>{{ pessoa }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="vazio">Nenhum cadastro encontrado.</p>
+    {% endif %}
+  </div>
+{% endblock %}

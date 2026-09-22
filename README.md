@@ -1,54 +1,85 @@
-# Sistema de Condomínio (POO)
+# Sistema de Portaria para Condominios
 
-Projeto simples de cadastro para um condomínio, feito para a disciplina de
-Programação Orientada a Objetos. Permite cadastrar **moradores** e
-**visitantes** e listar os cadastros feitos.
+Projeto da disciplina de **Programacao Orientada a Objetos**.
 
-## Estrutura do projeto
+Sistema de controle de portaria: cadastra moradores, visitantes,
+entregadores e funcionarios, e registra as entradas e saidas do condominio
+com data, hora e tempo de permanencia.
+
+Funciona por **duas interfaces** que compartilham as mesmas classes e os
+mesmos dados: um menu no terminal e uma pagina web em Django.
+
+## Estrutura do repositorio
 
 ```
-condominio-poo/
-├── src/
-│   ├── main.py            # ponto de entrada do programa
-│   ├── models/            # classes de dominio
-│   │   ├── person.py       # classe base, com nome e CPF
-│   │   ├── resident.py     # morador, herda de Person
-│   │   └── visitor.py      # visitante, herda de Person
-│   └── ui/                # interface com o usuario
-│       └── menu.py         # menu no terminal
-├── docs/
-│   └── IDEIAS.md          # 100 ideias de melhoria para o projeto
-├── README.md
+portaria/
+├── src/                  # codigo-fonte do sistema
+│   ├── main.py           # ponto de entrada do terminal
+│   ├── config.py         # constantes e caminhos dos arquivos
+│   ├── errors.py         # excecoes proprias do sistema
+│   ├── decorators.py     # decoradores (@log_operacao, @contar_chamadas)
+│   ├── models/           # classes de dominio (Person, Unit, Vehicle...)
+│   ├── services/         # regras de negocio (Condominium)
+│   ├── persistence/      # leitura e gravacao em CSV
+│   └── ui/               # menu do terminal
+├── web/                  # projeto Django (interface web)
+├── tests/                # testes automatizados (unittest)
+├── docs/                 # documentacao, relatorio e diagrama de classes
+├── dados/                # arquivos CSV gerados ao usar o sistema
+├── requirements.txt
 ├── LICENSE
-└── .gitignore
+└── README.md
 ```
-
-## Conceitos de POO aplicados
-
-- **Encapsulamento**: os atributos de `Person` e das subclasses são privados
-  (prefixo `_`) e acessados por `@property`.
-- **Herança**: `Resident` e `Visitor` herdam de `Person`, reaproveitando
-  `name` e `cpf` sem repetir código.
-- **Polimorfismo**: tanto `Resident` quanto `Visitor` sobrescrevem o método
-  `describe()`, e o `main.py` chama esse método da mesma forma para
-  qualquer um dos dois, sem precisar saber qual é qual.
 
 ## Como rodar
 
-Requisitos: Python 3.10 ou superior instalado.
+### Terminal (nao precisa instalar nada)
 
 ```bash
-cd src
-python main.py
+python3 src/main.py
 ```
 
-O programa mostra um menu no terminal para cadastrar morador, cadastrar
-visitante, listar os cadastros feitos, ou sair.
+### Web (precisa do Django)
 
-## Próximos passos
+```bash
+pip install -r requirements.txt
+```
 
-Este é o MVP inicial, cobrindo só o cadastro. As próximas etapas planejadas
-são: controle de acesso (entrada/saída na portaria) e reserva de área comum.
+```bash
+python3 web/manage.py runserver
+```
 
-Uma lista completa de ideias de melhoria, detalhadas uma a uma, está em
-[docs/IDEIAS.md](docs/IDEIAS.md).
+Depois e so abrir `http://127.0.0.1:8000`.
+
+### Testes
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+## Documentacao
+
+| Arquivo | Conteudo |
+|---|---|
+| [docs/RELATORIO.md](docs/RELATORIO.md) | Relatorio completo do trabalho |
+| [docs/DIAGRAMA_CLASSES.md](docs/DIAGRAMA_CLASSES.md) | Diagrama de classes (UML em Mermaid) |
+| [docs/DOCUMENTACAO.md](docs/DOCUMENTACAO.md) | Explicacao do codigo, classe por classe |
+| [docs/BANCO_DE_DADOS.md](docs/BANCO_DE_DADOS.md) | Notas sobre banco de dados (a preencher) |
+
+## Conceitos de POO aplicados
+
+Heranca em tres niveis (`Person` -> `Visitor` -> `DeliveryPerson`), classe
+abstrata com `ABCMeta`, encapsulamento com `@property`, polimorfismo em
+`describe()`, composicao com `Unit` e `Vehicle`, protocolos (`__len__`,
+`__getitem__`, `__enter__`/`__exit__`), sobrecarga de operadores, iteradores
+e generators, decoradores, excecoes proprias e persistencia em CSV.
+
+A lista completa, com o lugar exato de cada conceito no codigo, esta na
+secao "Temas abordados" do [relatorio](docs/RELATORIO.md).
+
+## Observacao sobre o CPF
+
+O sistema valida o CPF pelos **digitos verificadores reais**, entao numeros
+inventados como `111.111.111-11` sao recusados. Para testar, use um gerador
+de CPF valido ou um destes: `526.018.159-06`, `083.016.613-05`,
+`186.091.390-34`.

@@ -1,147 +1,177 @@
-"""Menu do terminal: le as opcoes do usuario e chama o cadastro."""
+"""Menu do terminal: le as opcoes do usuario e chama as regras de negocio."""
 
-from models import Resident, Visitor, Employee, DeliveryPerson, Unit, Vehicle, AccessLog
+import config
+from errors import PortariaError
+from models import DeliveryPerson, Employee, Resident, Vehicle, Visitor
+from persistence import Repositorio
+from services import Condominium
 
-residents = []
-visitors = []
-employees = []
-deliveries = []
-units = []
-access_logs = []
-
-
-def find_or_create_unit(number: str, block: str) -> Unit:
-    for unit in units:
-        if unit.number == number and unit.block == block:
-            return unit
-    unit = Unit(number, block)
-    units.append(unit)
-    return unit
+condominio = Condominium(config.CONDOMINIO)
+repositorio = Repositorio()
 
 
-def find_person_by_cpf(cpf: str):
-    for person in residents + visitors + deliveries + employees:
-        if person.cpf == cpf:
-            return person
-    return None
+def cabecalho(titulo: str) -> None:
+    print(f"\n=== {config.CONDOMINIO} | {titulo} ===")
 
 
-def read_vehicle():
-    plate = input("Placa do veiculo (deixe em branco se nao tiver): ")
-    if not plate:
+def ler_texto(rotulo: str) -> str:
+    return input(rotulo).strip()
+
+
+def ler_veiculo():
+    """Le os dados do veiculo; devolve None se nao houver placa."""
+    placa = ler_texto("Placa do veiculo (deixe em branco se nao tiver): ")
+    if not placa:
         return None
-    model = input("Modelo do veiculo (opcional): ")
-    color = input("Cor do veiculo (opcional): ")
-    return Vehicle(plate, model, color)
+    modelo = ler_texto("Modelo (opcional): ")
+    cor = ler_texto("Cor (opcional): ")
+    return Vehicle(placa, modelo, cor)
 
 
-def register_resident():
-    name = input("Nome do morador: ")
-    cpf = input("CPF: ")
-    unit_number = input("Numero da unidade: ")
-    block = input("Bloco: ")
-    unit = find_or_create_unit(unit_number, block)
-    vehicle = read_vehicle()
-    resident = Resident(name, cpf, unit, vehicle)
-    residents.append(resident)
-    print("Morador cadastrado com sucesso!\n")
+def cadastrar_morador():
+    cabecalho("Cadastro de morador")
+    nome = ler_texto("Nome: ")
+    cpf = ler_texto("CPF: ")
+    numero = ler_texto("Numero da unidade: ")
+    bloco = ler_texto("Bloco: ")
+    unidade = condominio.find_or_create_unit(numero, bloco)
+    condominio.add_person(Resident(nome, cpf, unidade, ler_veiculo()))
+    print("[OK] Morador cadastrado!")
 
 
-def register_visitor():
-    name = input("Nome do visitante: ")
-    cpf = input("CPF: ")
-    vehicle = read_vehicle()
-    visitor = Visitor(name, cpf, vehicle)
-    visitors.append(visitor)
-    print("Visitante cadastrado com sucesso!\n")
+def cadastrar_visitante():
+    cabecalho("Cadastro de visitante")
+    nome = ler_texto("Nome: ")
+    cpf = ler_texto("CPF: ")
+    condominio.add_person(Visitor(nome, cpf, ler_veiculo()))
+    print("[OK] Visitante cadastrado!")
 
 
-def register_delivery():
-    name = input("Nome do entregador: ")
-    cpf = input("CPF: ")
-    company = input("Empresa (iFood, Correios, transportadora...): ")
-    vehicle = read_vehicle()
-    delivery = DeliveryPerson(name, cpf, company, vehicle)
-    deliveries.append(delivery)
-    print("Entregador cadastrado com sucesso!\n")
+def cadastrar_entregador():
+    cabecalho("Cadastro de entregador")
+    nome = ler_texto("Nome: ")
+    cpf = ler_texto("CPF: ")
+    empresa = ler_texto("Empresa (iFood, Correios...): ")
+    condominio.add_person(DeliveryPerson(nome, cpf, empresa, ler_veiculo()))
+    print("[OK] Entregador cadastrado!")
 
 
-def register_employee():
-    name = input("Nome do funcionario: ")
-    cpf = input("CPF: ")
-    role = input("Funcao (porteiro, zelador, faxineiro...): ")
-    shift = input("Turno (manha, tarde ou noite): ")
-    employee = Employee(name, cpf, role, shift)
-    employees.append(employee)
-    print("Funcionario cadastrado com sucesso!\n")
+def cadastrar_funcionario():
+    cabecalho("Cadastro de funcionario")
+    nome = ler_texto("Nome: ")
+    cpf = ler_texto("CPF: ")
+    funcao = ler_texto("Funcao (porteiro, zelador...): ")
+    turno = ler_texto(f"Turno {config.TURNOS}: ")
+    condominio.add_person(Employee(nome, cpf, funcao, turno))
+    print("[OK] Funcionario cadastrado!")
 
 
-def register_access():
-    cpf = input("CPF de quem esta entrando: ")
-    person = find_person_by_cpf(cpf)
-    if person is None:
-        print("Nenhuma pessoa cadastrada com esse CPF.\n")
-        return
-
-    if isinstance(person, Resident):
-        destination = person.unit
+def registrar_entrada():
+    cabecalho("Registrar entrada")
+    pessoa = condominio.find_by_cpf(ler_texto("CPF de quem esta entrando: "))
+    if isinstance(pessoa, Resident):
+        destino = pessoa.unit
     else:
-        unit_number = input("Numero da unidade de destino: ")
-        block = input("Bloco de destino: ")
-        destination = find_or_create_unit(unit_number, block)
-
-    log = AccessLog(person, destination)
-    access_logs.append(log)
-    print("Entrada registrada com sucesso!\n")
+        numero = ler_texto("Unidade de destino: ")
+        bloco = ler_texto("Bloco de destino: ")
+        destino = condominio.find_or_create_unit(numero, bloco)
+    condominio.register_entry(pessoa, destino)
+    print("[OK] Entrada registrada!")
 
 
-def list_all():
-    print("\n--- Moradores ---")
-    for resident in residents:
-        print(resident.describe())
+def registrar_saida():
+    cabecalho("Registrar saida")
+    log = condominio.register_exit(ler_texto("CPF de quem esta saindo: "))
+    print(f"[OK] Saida registrada! Permanencia: {log.duration_minutes()} min")
 
-    print("\n--- Visitantes ---")
-    for visitor in visitors:
-        print(visitor.describe())
 
-    print("\n--- Entregadores ---")
-    for delivery in deliveries:
-        print(delivery.describe())
+def listar_cadastros():
+    cabecalho("Cadastros")
+    # Um unico for para todos os tipos: cada objeto responde do seu jeito.
+    print(f"{'NOME':<25}{'CPF':<16}DESCRICAO")
+    print("-" * 78)
+    for pessoa in sorted(condominio):  # sorted usa o __lt__ de Person
+        print(f"{pessoa.name:<25}{pessoa.formatted_cpf:<16}{pessoa}")
+    if len(condominio) == 0:
+        print("(nenhum cadastro ainda)")
 
-    print("\n--- Funcionarios ---")
-    for employee in employees:
-        print(employee.describe())
 
-    print("\n--- Registros de acesso ---")
-    for log in access_logs:
-        print(log.describe())
-    print()
+def listar_quem_esta_dentro():
+    cabecalho("Quem esta dentro agora")
+    encontrou = False
+    for log in condominio.people_inside():
+        print(f"- {log}")
+        encontrou = True
+    if not encontrou:
+        print("(ninguem dentro no momento)")
+
+
+def buscar_pessoa():
+    cabecalho("Buscar por nome")
+    trecho = ler_texto("Digite parte do nome: ")
+    encontrou = False
+    for pessoa in condominio.find_by_name(trecho):
+        print(f"- {pessoa}")
+        encontrou = True
+    if not encontrou:
+        print("(nada encontrado)")
+
+
+def mostrar_relatorio():
+    cabecalho("Relatorio")
+    print(condominio.relatorio())
+
+
+def salvar():
+    repositorio.salvar(condominio)
+    print(f"[OK] Dados salvos em {config.DATA_DIR}")
+
+
+OPCOES = {
+    "1": ("Cadastrar morador", cadastrar_morador),
+    "2": ("Cadastrar visitante", cadastrar_visitante),
+    "3": ("Cadastrar entregador", cadastrar_entregador),
+    "4": ("Cadastrar funcionario", cadastrar_funcionario),
+    "5": ("Registrar entrada", registrar_entrada),
+    "6": ("Registrar saida", registrar_saida),
+    "7": ("Listar cadastros", listar_cadastros),
+    "8": ("Quem esta dentro agora", listar_quem_esta_dentro),
+    "9": ("Buscar por nome", buscar_pessoa),
+    "10": ("Relatorio", mostrar_relatorio),
+    "11": ("Salvar dados", salvar),
+}
 
 
 def run_menu():
-    while True:
-        print("1 - Cadastrar morador")
-        print("2 - Cadastrar visitante")
-        print("3 - Cadastrar entregador")
-        print("4 - Cadastrar funcionario")
-        print("5 - Registrar entrada na portaria")
-        print("6 - Listar cadastros")
-        print("0 - Sair")
-        option = input("Escolha uma opcao: ")
+    """Laco principal do menu."""
+    repositorio.carregar(condominio)
+    print(f"Dados carregados: {len(condominio)} pessoas cadastradas.")
 
-        if option == "1":
-            register_resident()
-        elif option == "2":
-            register_visitor()
-        elif option == "3":
-            register_delivery()
-        elif option == "4":
-            register_employee()
-        elif option == "5":
-            register_access()
-        elif option == "6":
-            list_all()
-        elif option == "0":
-            break
-        else:
-            print("Opcao invalida.\n")
+    try:
+        while True:
+            cabecalho("Menu")
+            for chave, (rotulo, _) in OPCOES.items():
+                print(f"{chave:>2} - {rotulo}")
+            print(" 0 - Sair")
+
+            escolha = input("Escolha uma opcao: ").strip()
+
+            if escolha == "0":
+                break
+            if escolha not in OPCOES:
+                print("[ERRO] Opcao invalida.")
+                continue
+
+            try:
+                OPCOES[escolha][1]()
+            except PortariaError as erro:
+                # Captura a classe pai: pega qualquer erro do sistema.
+                print(f"[ERRO] {erro}")
+            except ValueError as erro:
+                print(f"[ERRO] Valor invalido: {erro}")
+    except KeyboardInterrupt:
+        print("\nEncerrando...")
+    finally:
+        # O finally roda sempre, com ou sem erro: os dados nunca se perdem.
+        repositorio.salvar(condominio)
+        print("Dados salvos. Ate logo!")

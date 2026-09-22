@@ -1,235 +1,205 @@
-# Documentação do Sistema de Portaria
+# Documentacao do Sistema de Portaria
 
-Explicação de como o código está organizado e como cada parte funciona.
-Serve como guia rápido para entender o projeto sem precisar ler tudo do
-zero.
+Explicacao de como o codigo esta organizado e como cada parte funciona.
+Para o relatorio da disciplina, ver [RELATORIO.md](RELATORIO.md); para o
+diagrama, ver [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md).
 
-## Visão geral
+## Visao geral
 
-O programa é um cadastro de portaria de condomínio rodando no terminal.
-Ele guarda, em memória (enquanto o programa está aberto), quatro tipos de
-pessoa: **moradores**, **visitantes**, **entregadores** e
-**funcionários**. Não existe banco de dados nem arquivo salvo — ao fechar
-o programa, os cadastros são perdidos.
+O sistema cadastra quatro tipos de pessoa (morador, visitante, entregador e
+funcionario) e registra as entradas e saidas da portaria. Os dados ficam
+guardados em arquivos CSV na pasta `dados/`, entao sobrevivem ao fechamento
+do programa.
 
-## Estrutura de pastas
+Duas interfaces usam o mesmo nucleo: o menu do terminal e o site Django.
+
+## Arquitetura em camadas
 
 ```
-src/
-├── main.py            # ponto de entrada
-├── models/            # classes de dominio (o "o que existe" no sistema)
-│   ├── __init__.py
-│   ├── person.py
-│   ├── resident.py
-│   ├── visitor.py
-│   ├── delivery_person.py
-│   └── employee.py
-└── ui/                 # interface com o usuario (o "como se usa")
-    ├── __init__.py
-    └── menu.py
+ui/menu.py  (terminal)  ─┐
+                         ├─> services/  ─> models/
+web/portaria_app (Django)┘       │
+                                 └─> persistence/ ─> dados/*.csv
 ```
 
-A ideia por trás dessa divisão: `models` não sabe nada sobre `input()` ou
-`print()` — só define os dados e comportamentos de cada tipo de pessoa.
-Quem conversa com o usuário é o `ui`. Essa separação facilita trocar a
-interface no futuro (por exemplo, para uma interface gráfica) sem precisar
-mexer nas classes de domínio.
+A regra e simples: **uma camada so conversa com a de baixo**. `models/` nao
+sabe o que e `input()`, `print()` ou HTTP; `persistence/` e a unica que sabe
+o que e arquivo. Por isso foi possivel acrescentar a interface web sem
+alterar nenhuma linha das classes de dominio.
 
-## As classes em `models/`
+## As classes de dominio (`src/models/`)
 
-### `Person` ([person.py](../src/models/person.py))
-
-Classe base de todo mundo que entra no sistema. Guarda `name` e `cpf`.
+### `Person` — a base abstrata
 
 ```python
-class Person:
-    def __init__(self, name: str, cpf: str):
-        self._name = name
-        self._cpf = cpf
+class Person(metaclass=ABCMeta):
+    _total = 0
+
+    def __init__(self, name, cpf):
+        self.name = name   # passa pelo setter, entao valida
+        self.cpf = cpf
+        Person._total += 1
 ```
 
-Os atributos começam com `_` (underscore) por convenção de
-**encapsulamento**: eles não deveriam ser acessados diretamente de fora da
-classe. O jeito correto de ler o nome ou o CPF é pelas `@property`:
+Pontos importantes:
 
-```python
-@property
-def name(self) -> str:
-    return self._name
-```
+- **E abstrata** (`metaclass=ABCMeta` + `@abstractmethod describe()`).
+  "Pessoa" sozinha nao existe na portaria, entao `Person(...)` direto
+  levanta `TypeError`. As subclasses ainda reaproveitam o corpo do metodo
+  chamando `super().describe()`.
+- **Encapsulamento com property**: `name` e `cpf` sao `@property` com
+  setter. O setter normaliza (nome vira `Title Case`, CPF perde pontos) e
+  valida, levantando excecao propria se o dado estiver errado.
+- **`@staticmethod is_valid_cpf()`**: calcula os dois digitos verificadores
+  de verdade. E estatico porque nao depende de nenhuma instancia.
+- **`@classmethod total_cadastrados()`**: le o atributo de classe `_total`,
+  compartilhado por todas as instancias.
+- **Operadores**: `__str__`, `__repr__`, `__eq__` (compara por CPF),
+  `__hash__` e `__lt__` (ordena por nome, fazendo `sorted()` funcionar).
 
-Isso permite, no futuro, adicionar validação dentro do getter (ou criar um
-setter) sem quebrar quem já usa `pessoa.name`.
+### As subclasses
 
-O método `describe()` devolve um texto pronto para exibir:
+| Classe | Herda de | Acrescenta |
+|---|---|---|
+| `Resident` | `Person` | `unit` (obrigatorio) e `vehicle` (opcional) |
+| `Visitor` | `Person` | `vehicle` (opcional) |
+| `DeliveryPerson` | `Visitor` | `company` |
+| `Employee` | `Person` | `role` e `shift` (turno validado) |
 
-```python
-def describe(self) -> str:
-    return f"{self._name} (CPF: {self._cpf})"
-```
-
-### `Resident` ([resident.py](../src/models/resident.py))
-
-Um morador **é** uma pessoa (herança), então:
-
-```python
-class Resident(Person):
-    def __init__(self, name, cpf, unit_number, block):
-        super().__init__(name, cpf)
-        self._unit_number = unit_number
-        self._block = block
-```
-
-`super().__init__(name, cpf)` chama o construtor de `Person` para não
-repetir a lógica de guardar nome e CPF. `Resident` só adiciona o que é
-específico dele: unidade e bloco.
-
-O `describe()` também reaproveita o de `Person`:
-
-```python
-def describe(self) -> str:
-    base_info = super().describe()
-    return f"{base_info} - Morador do bloco {self._block}, unidade {self._unit_number}"
-```
-
-`super().describe()` pega o texto básico (`"Nome (CPF: ...)"`) e
-`Resident` só completa com a parte que é dele. Isso é **polimorfismo**: a
-mesma chamada `describe()` se comporta de um jeito diferente em cada
-subclasse.
-
-### `Visitor` ([visitor.py](../src/models/visitor.py))
-
-Mesmo padrão do `Resident`, mas para visitantes: adiciona `license_plate`
-(placa do veículo, opcional). O `describe()` verifica se a placa foi
-informada para escolher a frase certa:
-
-```python
-if self._license_plate:
-    return f"{base_info} - Visitante, veiculo placa {self._license_plate}"
-return f"{base_info} - Visitante, sem veiculo"
-```
-
-### `DeliveryPerson` ([delivery_person.py](../src/models/delivery_person.py))
-
-Um entregador é um caso específico de visitante (chega, entrega, sai), por
-isso herda de `Visitor` e não de `Person` diretamente:
-
-```python
-class DeliveryPerson(Visitor):
-    def __init__(self, name, cpf, company, license_plate=""):
-        super().__init__(name, cpf, license_plate)
-        self._company = company
-```
-
-Isso cria uma cadeia de herança de três níveis:
-`Person` → `Visitor` → `DeliveryPerson`. Quando um `DeliveryPerson` chama
-`describe()`, a cadeia de `super()` roda assim:
+`DeliveryPerson` herda de `Visitor`, e nao de `Person`, formando tres
+niveis. Quando ele chama `describe()`, a cadeia sobe inteira:
 
 1. `DeliveryPerson.describe()` chama `super().describe()`
-2. que é `Visitor.describe()`, que chama `super().describe()`
-3. que é `Person.describe()`, que monta a base com nome e CPF
+2. que e `Visitor.describe()`, que chama `super().describe()`
+3. que e `Person.describe()`, que monta o texto com nome e CPF
 
-Cada nível só acrescenta a sua parte, sem repetir o que já foi feito pelo
-nível anterior.
+Resultado: `Pedro Alves (CPF: ...) - Visitante, sem veiculo - Entregador da iFood`.
 
-### `Employee` ([employee.py](../src/models/employee.py))
+### `Unit` — composicao e protocolo de sequencia
 
-Funcionário do condomínio (porteiro, zelador, faxineiro), com `role`
-(função) e `shift` (turno). Herda direto de `Person`, porque um
-funcionário não é um caso de visitante nem de morador.
-
-### `models/__init__.py`
-
-Reexporta as cinco classes para que o resto do código possa importar de
-um lugar só:
+Guarda numero, bloco e a lista de moradores. Implementa `__len__`,
+`__getitem__` e `__contains__`, entao funciona assim **sem herdar de nada**:
 
 ```python
-from models import Resident, Visitor, Employee, DeliveryPerson
+len(unidade)            # quantos moradores
+unidade[0]              # primeiro morador
+morador in unidade      # pertence?
+for m in unidade: ...   # itera
 ```
 
-em vez de precisar saber o nome do arquivo de cada classe.
+Isso e duck typing: basta ter os metodos que o Python espera.
 
-## A interface em `ui/menu.py`
+### `Vehicle` e `AccessLog`
 
-O menu guarda quatro listas em memória, uma para cada tipo de cadastro:
+`Vehicle` valida a placa nos padroes antigo e Mercosul, e e reaproveitado
+por `Resident` e `Visitor` (a mesma classe servindo a duas outras).
+
+`AccessLog` guarda quem entrou, o destino, a entrada e a saida. O tempo de
+permanencia e **calculado** por `duration_minutes()`, nunca armazenado, para
+nao existir dado redundante que possa ficar desatualizado.
+
+## Regras de negocio (`src/services/condominio.py`)
+
+A classe `Condominium` substituiu as listas globais que existiam no menu.
+Ela concentra:
+
+- **Cadastro** com `add_person()`, que recusa CPF duplicado
+  (`DuplicateCpfError`);
+- **Buscas**: `find_by_cpf()` (levanta `PersonNotFoundError` em vez de
+  devolver `None` silenciosamente);
+- **Generators** com `yield`: `find_by_name()`, `residents_of_block()` e
+  `people_inside()` produzem os resultados sob demanda;
+- **Controle de acesso**: `register_entry()` e `register_exit()`;
+- **Protocolos**: `__iter__`, `__len__` e `__contains__`, entao
+  `for pessoa in condominio` percorre os quatro tipos de uma vez so.
+
+## Excecoes proprias (`src/errors.py`)
+
+```
+Exception
+└── PortariaError
+    ├── EmptyNameError
+    ├── InvalidCpfError
+    ├── InvalidPlateError
+    ├── InvalidShiftError
+    ├── DuplicateCpfError
+    └── PersonNotFoundError
+```
+
+Como capturar a classe pai captura as filhas, o menu e as views escrevem
+apenas `except PortariaError` e tratam qualquer erro do sistema de uma vez.
+
+## Decoradores (`src/decorators.py`)
+
+- `@log_operacao` — registra no historico toda execucao da funcao;
+- `@contar_chamadas` — conta quantas vezes a funcao foi chamada.
+
+Ambos usam `@functools.wraps` para preservar o nome e a docstring da funcao
+original.
+
+## Persistencia (`src/persistence/repositorio.py`)
+
+- `ArquivoCsv` e um **context manager proprio** (`__enter__` / `__exit__`),
+  usado com `with`. O `__exit__` roda mesmo se der erro no meio, garantindo
+  o fechamento do arquivo.
+- `Repositorio.salvar()` grava com `csv.DictWriter`;
+  `Repositorio.carregar()` le com `csv.DictReader` e **recria os objetos**.
+- Se o arquivo ainda nao existe (primeira execucao), `FileNotFoundError` e
+  tratado e o sistema comeca com lista vazia em vez de quebrar.
+- Os caminhos vem de `src/config.py`, montados com `pathlib.Path` a partir
+  da localizacao do proprio arquivo — funciona de qualquer pasta.
+
+## Menu do terminal (`src/ui/menu.py`)
+
+O menu usa um **dicionario de opcoes** em vez de uma cadeia de `if/elif`:
 
 ```python
-residents = []
-visitors = []
-employees = []
-deliveries = []
+OPCOES = {
+    "1": ("Cadastrar morador", cadastrar_morador),
+    ...
+}
 ```
 
-Para cada tipo existe uma função `register_*()` que faz três coisas:
-pergunta os dados com `input()`, cria o objeto da classe correspondente e
-guarda na lista certa. Exemplo:
+As funcoes sao tratadas como valores. O laco principal usa
+`try/except/finally`: captura `PortariaError`, trata `KeyboardInterrupt`
+(Ctrl+C) com elegancia, e o `finally` salva os dados sempre — com ou sem
+erro.
 
-```python
-def register_resident():
-    name = input("Nome do morador: ")
-    cpf = input("CPF: ")
-    unit_number = input("Numero da unidade: ")
-    block = input("Bloco: ")
-    resident = Resident(name, cpf, unit_number, block)
-    residents.append(resident)
-    print("Morador cadastrado com sucesso!\n")
-```
+## Interface web (`web/`)
 
-A função `list_all()` percorre as quatro listas e chama `describe()` em
-cada objeto. Repare que ela nunca pergunta "isso é um morador ou um
-visitante?" — ela só chama `.describe()` e cada classe sabe responder do
-seu próprio jeito. Esse é o uso prático do polimorfismo: o código que
-imprime é o mesmo para qualquer tipo de pessoa.
+Projeto Django simples, com quatro paginas:
 
-A função `run_menu()` é o laço principal: mostra as opções, lê a escolha
-do usuário e chama a função correspondente, até a opção `0` ser escolhida.
-
-## O ponto de entrada: `main.py`
-
-```python
-from ui import run_menu
-
-def main():
-    run_menu()
-
-if __name__ == "__main__":
-    main()
-```
-
-`main.py` não faz nada sozinho: ele só chama `run_menu()`. O
-`if __name__ == "__main__":` garante que `main()` só roda quando o
-arquivo é executado diretamente (`python main.py`), e não quando é
-importado por outro módulo.
-
-## Fluxo de uma execução
-
-1. `python src/main.py` roda `main()`.
-2. `main()` chama `run_menu()`, que mostra o menu em laço.
-3. O usuário escolhe uma opção (ex.: "1 - Cadastrar morador").
-4. `run_menu()` chama a função correspondente (`register_resident()`).
-5. Essa função pergunta os dados, cria um objeto (`Resident(...)`) e
-   guarda na lista `residents`.
-6. O laço volta ao início e mostra o menu de novo, até o usuário escolher
-   sair.
-
-## Conceitos de POO usados, com exemplo de cada um
-
-| Conceito | Onde aparece | Como |
+| Rota | View | O que mostra |
 |---|---|---|
-| Encapsulamento | Todas as classes em `models/` | Atributos com `_` e acesso via `@property` |
-| Herança | `Resident`, `Visitor`, `Employee` → `Person`; `DeliveryPerson` → `Visitor` | `class X(Person):` e `super().__init__(...)` |
-| Polimorfismo | `describe()` em cada classe | `list_all()` chama `describe()` sem saber o tipo exato do objeto |
-| Composição de comportamento | `describe()` nas subclasses | Cada `describe()` reaproveita `super().describe()` e só acrescenta sua parte |
+| `/` | `index` | Numeros gerais e quem esta dentro agora |
+| `/pessoas/` | `pessoas` | Lista de cadastros, com busca por nome |
+| `/cadastrar/` | `cadastrar` | Formulario dos quatro tipos de pessoa |
+| `/acesso/` | `acesso` | Registrar entrada/saida e ver o historico |
 
-## Como rodar
+Detalhes:
+
+- **Nao usa o ORM do Django.** Nao ha `models.py` com modelos do Django: as
+  views importam as mesmas classes de `src/models/` e a mesma persistencia
+  em CSV. O `settings.py` acrescenta `src/` ao caminho de importacao.
+- `portaria_app/servico.py` carrega o condominio dos CSVs uma vez e o
+  compartilha entre as requisicoes.
+- As views usam `try/except PortariaError` e mostram a mensagem de erro na
+  propria pagina; quando da certo, salvam e redirecionam.
+
+## Testes (`tests/test_models.py`)
+
+22 testes com `unittest`, organizados em cinco classes e usando `setUp()`
+para montar os objetos uma vez so. Cobrem validacao, o caminho de erro
+(`assertRaises`), polimorfismo, composicao e o controle de acesso.
 
 ```bash
-cd src
-python main.py
+python3 -m unittest discover -s tests -v
 ```
 
-## Onde ver mais
+## Fluxo de uma execucao (terminal)
 
-Uma lista de 100 ideias de melhoria para evoluir o projeto (com o
-conceito de POO de cada uma) está em `docs/IDEIAS.md` — esse arquivo fica
-só na máquina local (não é enviado ao GitHub, veja o `.gitignore`).
+1. `python3 src/main.py` chama `run_menu()`.
+2. O repositorio carrega os CSVs e recria os objetos.
+3. O usuario escolhe uma opcao; o dicionario `OPCOES` chama a funcao certa.
+4. A funcao monta o objeto e entrega ao `Condominium`, que aplica as regras.
+5. Ao sair (ou em caso de erro), o `finally` grava tudo de volta nos CSVs.

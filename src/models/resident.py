@@ -1,3 +1,5 @@
+"""Morador do condominio."""
+
 from models.person import Person
 from models.unit import Unit
 from models.vehicle import Vehicle
@@ -21,8 +23,15 @@ class Resident(Person):
         return self._vehicle
 
     def describe(self) -> str:
-        base_info = super().describe()
-        info = f"{base_info} - Morador do {self._unit.describe()}"
+        info = f"{super().describe()} - Morador do {self._unit.describe()}"
         if self._vehicle:
             info += f", veiculo {self._vehicle.describe()}"
         return info
+
+    def to_dict(self) -> dict:
+        dados = super().to_dict()
+        dados.update(self._unit.to_dict())
+        dados["plate"] = self._vehicle.plate if self._vehicle else ""
+        dados["model"] = self._vehicle.model if self._vehicle else ""
+        dados["color"] = self._vehicle.color if self._vehicle else ""
+        return dados

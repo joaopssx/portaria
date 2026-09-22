@@ -1,0 +1,35 @@
+{% extends "portaria_app/base.html" %}
+{% block titulo %}Portaria - Inicio{% endblock %}
+
+{% block conteudo %}
+  <div class="cartao">
+    <h2>Resumo</h2>
+    <div class="numeros">
+      <div class="numero"><strong>{{ total }}</strong><span>Pessoas</span></div>
+      <div class="numero"><strong>{{ moradores }}</strong><span>Moradores</span></div>
+      <div class="numero"><strong>{{ visitantes }}</strong><span>Visitantes</span></div>
+      <div class="numero"><strong>{{ entregadores }}</strong><span>Entregadores</span></div>
+      <div class="numero"><strong>{{ funcionarios }}</strong><span>Funcionarios</span></div>
+      <div class="numero"><strong>{{ unidades }}</strong><span>Unidades</span></div>
+    </div>
+  </div>
+
+  <div class="cartao">
+    <h2>Quem esta dentro agora</h2>
+    {% if dentro %}
+      <table>
+        <tr><th>Pessoa</th><th>Destino</th><th>Entrada</th><th>Tempo</th></tr>
+        {% for log in dentro %}
+          <tr>
+            <td>{{ log.person.name }}</td>
+            <td>{{ log.destination }}</td>
+            <td>{{ log.entry_time|date:"d/m/Y H:i" }}</td>
+            <td>{{ log.duration_minutes }} min</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="vazio">Ninguem dentro no momento.</p>
+    {% endif %}
+  </div>
+{% endblock %}

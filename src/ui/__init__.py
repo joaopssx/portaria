@@ -1,4 +1,4 @@
-"""Camada de interface com o usuario (menu no terminal)."""
+"""Camada de interface com o usuario (terminal e janela grafica)."""
 
 from ui.menu import run_menu
 

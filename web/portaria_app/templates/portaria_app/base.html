@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Portaria{% endblock %}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      margin: 0; background: #f2f4f7; color: #1c1e21;
+    }
+    header {
+      background: #1f3a5f; color: #fff; padding: 16px 24px;
+    }
+    header h1 { margin: 0 0 8px; font-size: 20px; }
+    nav a {
+      color: #cfe0f5; text-decoration: none; margin-right: 16px; font-size: 14px;
+    }
+    nav a:hover, nav a.ativo { color: #fff; text-decoration: underline; }
+    main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    .cartao {
+      background: #fff; border: 1px solid #dcdfe4; border-radius: 6px;
+      padding: 16px 20px; margin-bottom: 16px;
+    }
+    h2 { margin-top: 0; font-size: 17px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e6e8eb; }
+    th { background: #f7f8fa; }
+    label { display: block; margin: 10px 0 4px; font-size: 14px; font-weight: 600; }
+    input, select {
+      width: 100%; padding: 8px; border: 1px solid #c4c8ce;
+      border-radius: 4px; font-size: 14px;
+    }
+    button {
+      margin-top: 14px; padding: 9px 18px; background: #1f3a5f; color: #fff;
+      border: 0; border-radius: 4px; font-size: 14px; cursor: pointer;
+    }
+    button:hover { background: #2b4f7e; }
+    .erro { background: #fdecea; border: 1px solid #f5c2bd; color: #8c1d13;
+            padding: 10px; border-radius: 4px; font-size: 14px; }
+    .aviso { background: #e8f5e9; border: 1px solid #b5dbb8; color: #1b5e20;
+             padding: 10px; border-radius: 4px; font-size: 14px; }
+    .numeros { display: flex; flex-wrap: wrap; gap: 12px; }
+    .numero { flex: 1 1 120px; background: #f7f8fa; border: 1px solid #e6e8eb;
+              border-radius: 6px; padding: 12px; text-align: center; }
+    .numero strong { display: block; font-size: 22px; }
+    .numero span { font-size: 12px; color: #5a6270; }
+    .vazio { color: #6b7280; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{{ condominio }}</h1>
+    <nav>
+      <a href="{% url 'index' %}">Inicio</a>
+      <a href="{% url 'pessoas' %}">Cadastros</a>
+      <a href="{% url 'cadastrar' %}">Novo cadastro</a>
+      <a href="{% url 'acesso' %}">Entrada / Saida</a>
+    </nav>
+  </header>
+  <main>
+    {% block conteudo %}{% endblock %}
+  </main>
+</body>
+</html>

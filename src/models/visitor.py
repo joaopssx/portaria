@@ -1,3 +1,5 @@
+"""Visitante do condominio."""
+
 from models.person import Person
 from models.vehicle import Vehicle
 
@@ -18,3 +20,10 @@ class Visitor(Person):
         if self._vehicle:
             return f"{base_info} - Visitante, veiculo {self._vehicle.describe()}"
         return f"{base_info} - Visitante, sem veiculo"
+
+    def to_dict(self) -> dict:
+        dados = super().to_dict()
+        dados["plate"] = self._vehicle.plate if self._vehicle else ""
+        dados["model"] = self._vehicle.model if self._vehicle else ""
+        dados["color"] = self._vehicle.color if self._vehicle else ""
+        return dados
